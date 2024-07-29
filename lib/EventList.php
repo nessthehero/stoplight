@@ -128,6 +128,7 @@ class EventList
                return $k['is_current'] === TRUE;
             });
         }
+        return [];
     }
 
     public function getUpcomingEvent() {
@@ -137,6 +138,7 @@ class EventList
                 return ($k['start_diff'] <= $this->settings->get($this->settings::SETTINGS_KEY_ALERT_THRESHOLD, 600));
             });
         }
+        return [];
     }
 
     public function getCurrentOrUpcomingEvent() {
