@@ -1,0 +1,25 @@
+{
+    "name": "imoffitt/stoplight",
+    "description": "Calendar Status Page",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Ian Moffitt",
+            "email": "imoffitt@andrew.cmu.edu"
+        }
+    ],
+    "require": {
+        "vlucas/phpdotenv": "^5.6",
+        "phpfastcache/phpfastcache": "^9.2",
+        "google/apiclient": "^2.15.0"
+    },
+    "scripts": {
+        "pre-autoload-dump": "Google\\Task\\Composer::cleanup"
+    },
+    "extra": {
+        "google/apiclient-services": [
+            "Calendar"
+        ]
+    }
+}

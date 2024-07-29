@@ -1,0 +1,6 @@
+.env
+.idea
+client_secret.json
+IDEAS.txt
+settings.json
+vendor/
