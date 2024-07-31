@@ -71,14 +71,28 @@ class EventList
                     $this->workingFrom = $event['summary'];
                 } else {
                     if (isset($event['start']['dateTime'])) {
-                        $this->eventList[] = [
-                            'start' => $event['start'],
-                            'start_timestamp' => strtotime($event['start']['dateTime']),
-                            'end' => $event['end'],
-                            'end_timestamp' => strtotime($event['end']['dateTime']),
-                            'summary' => $event['summary'],
-                            'type' => $event['eventType'],
-                        ];
+
+                        // Check if I have declined
+                        $declined = FALSE;
+                        $attendees = $event['attendees'];
+                        if (!empty($attendees)) {
+                            foreach ($attendees as $attendee) {
+                                if (!empty($attendee['self']) && $attendee['responseStatus'] === 'declined') {
+                                    $declined = TRUE;
+                                }
+                            }
+                        }
+
+                        if (!$declined) {
+                            $this->eventList[] = [
+                                'start' => $event['start'],
+                                'start_timestamp' => strtotime($event['start']['dateTime']),
+                                'end' => $event['end'],
+                                'end_timestamp' => strtotime($event['end']['dateTime']),
+                                'summary' => $event['summary'],
+                                'type' => $event['eventType'],
+                            ];
+                        }
                     }
                 }
             }
@@ -86,7 +100,8 @@ class EventList
 
     }
 
-    public function getEvents($upcomingOnly = FALSE) {
+    public function getEvents($upcomingOnly = FALSE)
+    {
 
         self::populateList();
 
@@ -121,17 +136,19 @@ class EventList
 
     }
 
-    public function getCurrentEvent() {
+    public function getCurrentEvent()
+    {
         $upcoming_events = self::getEvents(TRUE);
         if (count($upcoming_events) > 0) {
             return array_filter($upcoming_events, function ($k) {
-               return $k['is_current'] === TRUE;
+                return $k['is_current'] === TRUE;
             });
         }
         return [];
     }
 
-    public function getUpcomingEvent() {
+    public function getUpcomingEvent()
+    {
         $upcoming_events = self::getEvents(TRUE);
         if (count($upcoming_events) > 0) {
             return array_filter($upcoming_events, function ($k) {
@@ -141,13 +158,15 @@ class EventList
         return [];
     }
 
-    public function getCurrentOrUpcomingEvent() {
+    public function getCurrentOrUpcomingEvent()
+    {
         $current = $this->getCurrentEvent();
         $upcoming = $this->getUpcomingEvent();
         return !empty($current) ? $current : $upcoming;
     }
 
-    public function formatNextEvent() {
+    public function formatNextEvent()
+    {
         $this->formatter->setFormat($this->getCurrentOrUpcomingEvent());
         return $this->formatter;
     }
@@ -159,10 +178,10 @@ class EventList
 
     public function workInProgress()
     {
-        $work_hours_start = (int) $this->settings->get('work_hours_start');
-        $work_hours_end = (int) $this->settings->get('work_hours_end');
+        $work_hours_start = (int)$this->settings->get('work_hours_start');
+        $work_hours_end = (int)$this->settings->get('work_hours_end');
 
-        $current_time = (int) date('Hi');
+        $current_time = (int)date('Hi');
 
         if ($current_time > $work_hours_start && $current_time < $work_hours_end) {
             return 0;
@@ -180,11 +199,13 @@ class EventList
         }
     }
 
-    public function isCached() {
+    public function isCached()
+    {
         return $this->cache->has($this->cacheKey());
     }
 
-    public function cacheDebug($showObj = false) {
+    public function cacheDebug($showObj = false)
+    {
         return [
             'key' => $this->cacheKey(),
             'hasIt?' => $this->isCached(),
@@ -192,23 +213,28 @@ class EventList
         ];
     }
 
-    private function cacheKey() {
+    private function cacheKey()
+    {
         return 'today_' . date('Y-m-d', strtotime('now'));
     }
 
-    private function cacheSave($data) {
+    private function cacheSave($data)
+    {
         $this->cache->set($this->cacheKey(), $data, self::CACHE_EXPIRES);
     }
 
-    private function cacheGet() {
+    private function cacheGet()
+    {
         return $this->cache->get($this->cacheKey());
     }
 
-    public function enableCache() {
+    public function enableCache()
+    {
         $this->cacheEnabled = TRUE;
     }
 
-    public function disableCache() {
+    public function disableCache()
+    {
         $this->cacheEnabled = FALSE;
     }
 
