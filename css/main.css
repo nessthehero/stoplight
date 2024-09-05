@@ -1,0 +1,57 @@
+body,
+main {
+    padding: 0;
+    margin: 0;
+}
+
+main {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    font-weight: 900;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    background-color: darkgrey;
+    transition: all 0.4s linear;
+}
+
+.navbar--open {
+    #open {
+        display: none;
+    }
+}
+
+.navbar--closed {
+    form,
+    #close {
+        display: none;
+    }
+}
+
+.bar {
+    height: 4px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background-color: black;
+    opacity: 0.2;
+}
+
+.bar--motion {
+    animation-duration: var(--animation-length, 60s);
+    animation-name: progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@keyframes progress {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}

@@ -39,9 +39,16 @@ class Formatter
         'focusTime'
     ];
 
+    private $typeTranslation = [
+        'default' => 'Meeting',
+        'focusTime' => 'Focus Time'
+    ];
+
     private $status = 'Available';
 
     private $subtitle = '';
+
+    private $type = '';
 
     private $event;
 
@@ -52,7 +59,8 @@ class Formatter
         $this->settings = $settings;
     }
 
-    public function setFormat($event) {
+    public function setFormat($event)
+    {
         if (!empty($event)) {
             $this->event = current($event);
             $sum = $this->event['event']['summary'];
@@ -87,17 +95,20 @@ class Formatter
         }
     }
 
-    public function getFormat() {
+
+    public function getFormat()
+    {
         return [
             'class' => self::getClassList(),
             'status' => self::getStatus(),
             'subtitle' => self::getSubtitle(),
+            'type' => self::getType(),
             'event' => self::getEvent()
         ];
     }
 
-    public function workingFromHomeOverride() {
-
+    public function workingFromHomeOverride()
+    {
 
 
     }
@@ -128,6 +139,16 @@ class Formatter
         $this->subtitle = $subtitle;
     }
 
+    public function getType(): string
+    {
+        return !empty($this->typeTranslation[$this->type]) ? $this->typeTranslation[$this->type] : $this->type;
+    }
+
+    public function setType(string $type): void
+    {
+        $this->type = $type;
+    }
+
     public function getStatus(): string
     {
         return $this->status;
@@ -148,8 +169,10 @@ class Formatter
         $this->classList = $this->classOptions[$classKey];
     }
 
-    public function meetingInProgress() {
+    public function meetingInProgress()
+    {
         if (!empty($this->event)) {
+            $this->setType($this->event['event']['type']);
             if (in_array($this->event['event']['type'], $this->showBusyAsDnDKeys)) {
                 $this->setClassList('dnd');
             } else {
@@ -164,7 +187,8 @@ class Formatter
         }
     }
 
-    public function secondsUntilMeetingBegins() {
+    public function secondsUntilMeetingBegins()
+    {
         if (!empty($this->event)) {
             return ($this->event['start_diff'] < 0) ? abs($this->event['start_diff']) : 0;
         } else {
@@ -172,7 +196,8 @@ class Formatter
         }
     }
 
-    public function minutesUntilMeetingBegins() {
+    public function minutesUntilMeetingBegins()
+    {
         return ceil($this->secondsUntilMeetingBegins() / 60);
     }
 

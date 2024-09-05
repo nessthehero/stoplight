@@ -2,28 +2,41 @@
 
 require_once('api.php');
 
+use \StopLight\Settings;
 use Phpfastcache\Helper\Psr16Adapter;
 
 $defaultDriver = 'Files';
 $cache = new Psr16Adapter($defaultDriver);
 
-$settings = init_settings();
-$client = init_client();
+$lost_connection = false;
+$credentialsPath = __DIR__ . DIRECTORY_SEPARATOR . 'credentials' . DIRECTORY_SEPARATOR . 'credentials.json';
+
+$client = getGoogleClient($credentialsPath);
+
+$settings = new Settings(__DIR__ . '/settings.json');
 
 $calendar = null;
 $calendarId = null;
 
-if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
-    $client->setAccessToken($_SESSION['access_token']);
-    if ($client->isAccessTokenExpired()) {
-        renew_token(basename(__FILE__));
-    }
+try {
     $calendar = new Google\Service\Calendar($client);
-} else {
-    renew_token(basename(__FILE__));
+} catch (Exception $e) {
+    $lost_connection = true;
 }
 
 $calendarList = get_calendar_list($calendar);
+
+if (!isset($_GET['c'])) {
+    if (!empty($settings->get('calendarId'))) {
+        $calendarId = $settings->get('calendarId');
+    } else {
+        $calendarId = $calendarList[0];
+    }
+
+    header('Location: ?c=' . $calendarId);
+} else {
+    $calendarId = $_GET['c'];
+}
 
 ?>
 <!doctype html>
