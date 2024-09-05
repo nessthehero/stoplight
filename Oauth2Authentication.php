@@ -62,6 +62,7 @@ function buildClient()
 
     $client = new Google_Client();
     $client->setAccessType("offline");        // offline access.  Will result in a refresh token
+    $client->setApprovalPrompt('force');  // also results in a refresh token
     $client->setIncludeGrantedScopes(true);   // incremental auth
     $client->setAuthConfig(__DIR__ . '/client_secret.json');
     $client->addScope(Google\Service\Calendar::CALENDAR_READONLY);
