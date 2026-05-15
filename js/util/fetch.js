@@ -50,10 +50,13 @@ const fetcher = {
         const rqst = new Request(
             this.endpoint
         );
+        this.setError('');
         fetch(rqst)
             .then((response) => {
                 if (!response.ok) {
+                    this.setError(`HTTP error! Status: ${response.status}`);
                     throw new Error(`HTTP error! Status: ${response.status}`);
+
                 }
 
                 return response.json();
@@ -63,6 +66,8 @@ const fetcher = {
 
                 if (!data.success) {
                     console.error('Data issue', data, this);
+                    this.setError('Data issue');
+
                     this.processData(data);
                 }
 
@@ -87,6 +92,10 @@ const fetcher = {
 
     setValue($el, val) {
         $el.innerHTML = val;
+    },
+
+    setError(msg) {
+        document.getElementById('error-msg').innerText = msg;
     }
 
 }

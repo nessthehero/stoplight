@@ -1,0 +1,10 @@
+{
+    "calendarId": "example@gmail.com",
+    "enable_work_hours": true,
+    "work_hours_start": "0600",
+    "work_hours_end": "1445",
+    "wfh": false,
+    "override_status": "",
+    "alert_threshold": "1200",
+    "button_position": "topright"
+}

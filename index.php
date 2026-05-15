@@ -57,13 +57,14 @@ if (!isset($_GET['c'])) {
 <main id="frame">
     <h1 class="w-100 fs-1" id="status">Loading</h1>
     <h2 class="w-100 fs-6 m-0" id="subtitle"></h2>
+    <pre id="error-msg"></pre>
     <footer class="fw-lighter fs-6 opacity-25">
         <div class="p-1 d-inline position-fixed bottom-0 start-0" id="calendar-id"><?php print $calendarId; ?></div>
         <div class="p-1 d-inline position-fixed bottom-0 end-0" id="event-type"></div>
     </footer>
 </main>
 <nav class="navbar fixed-top bg-transparent navbar--closed" data-bs-theme="dark" id="navbar">
-    <div class="container-fluid">
+    <div class="container-fluid justify-content-end gap-2">
         <div class="d-flex">
             <form class="" id="form">
                 <label class="text-light" for="calendar">Calendar:</label>
@@ -77,7 +78,7 @@ if (!isset($_GET['c'])) {
                 <i class="bi-gear"></i>
             </a>
         </div>
-        <div class="d-flex">
+        <div class="d-flex justify-content-end">
             <a href="#" id="fs" class="btn btn-light btn-sm">
                 <span class="visually-hidden">Fullscreen</span>
                 <i class="bi bi-arrows-fullscreen"></i>
