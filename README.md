@@ -20,3 +20,11 @@ Rename `settings.example.json` to `settings.json`
   (e.g., "1700" or 1700).
 * `alert_threshold`: Number of seconds before an event to trigger an alert (
   e.g., 600).
+
+## Resources
+
+https://github.com/googleapis/google-api-php-client/blob/main/src/Client.php
+
+https://github.com/googleapis/google-api-php-client
+
+https://github.com/LindaLawton/Google-APIs-PHP-Samples/blob/master/Samples/Calendar%20API/v3/oauth2callback.php
