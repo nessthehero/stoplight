@@ -35,97 +35,118 @@ require_once __DIR__ . '/vendor/autoload.php';
  * Gets the Google client refreshing auth if needed.
  * Documentation: https://developers.google.com/identity/protocols/OAuth2
  * Initializes a client object.
+ *
  * @return A google client object.
  */
-function getGoogleClient($credentialsPath = __DIR__ . '/credentials.json')
-{
-    $client = getOauth2Client();
+function getGoogleClient($credentialsPath = __DIR__ . '/credentials.json') {
+  $client = getOauth2Client($credentialsPath);
 
-    // Refresh the token if it's expired.
-    if ($client->isAccessTokenExpired()) {
-        $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-        file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
-    }
-    return $client;
+  // Refresh the token if it's expired.
+  if ($client->isAccessTokenExpired() && $client->getRefreshToken()) {
+    $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+    file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
+  }
+  return $client;
 }
 
 /**
  * Builds the Google client object.
  * Documentation: https://developers.google.com/identity/protocols/OAuth2
  * Scopes will need to be changed depending upon the API's being accessed.
- * Example:  array(Google_Service_Analytics::ANALYTICS_READONLY, Google_Service_Analytics::ANALYTICS)
- * List of Google Scopes: https://developers.google.com/identity/protocols/googlescopes
+ * Example:  array(Google_Service_Analytics::ANALYTICS_READONLY,
+ * Google_Service_Analytics::ANALYTICS) List of Google Scopes:
+ * https://developers.google.com/identity/protocols/googlescopes
+ *
  * @return A google client object.
  */
-function buildClient()
-{
-
-    $client = new Google_Client();
-    $client->setAccessType("offline");        // offline access.  Will result in a refresh token
-    $client->setApprovalPrompt('force');  // also results in a refresh token
-    $client->setIncludeGrantedScopes(true);   // incremental auth
-    $client->setAuthConfig(__DIR__ . '/client_secret.json');
-    $client->addScope(Google\Service\Calendar::CALENDAR_READONLY);
-    $client->addScope(Google\Service\Calendar::CALENDAR_EVENTS_READONLY);
-    $client->setRedirectUri(getRedirectUri());
-    return $client;
+function buildClient() {
+  $client = new Google_Client([
+    'access_type' => 'offline',
+    'approval_prompt' => 'force',
+    'include_granted_scopes' => true,
+    'scopes' => [
+      Google\Service\Calendar::CALENDAR_READONLY,
+      Google\Service\Calendar::CALENDAR_EVENTS_READONLY
+    ],
+    'credentials' => __DIR__ . '/client_secret.json',
+    'redirect_uri' => getRedirectUri()
+  ]);
+  return $client;
 }
 
 /**
  * Builds the redirect uri.
- * Documentation: https://developers.google.com/api-client-library/python/auth/installed-app#choosingredirecturi
- * Hostname and current server path are needed to redirect to oauth2callback.php
+ * Documentation:
+ * https://developers.google.com/api-client-library/python/auth/installed-app#choosingredirecturi
+ * Hostname and current server path are needed to redirect to
+ * oauth2callback.php
+ *
  * @return A redirect uri.
  */
-function getRedirectUri()
-{
-
-    //Building Redirect URI
-    $url = $_SERVER['REQUEST_URI'];                    //returns the current URL
-    if (strrpos($url, '?') > 0)
-        $url = substr($url, 0, strrpos($url, '?'));  // Removing any parameters.
-    $folder = substr($url, 0, strrpos($url, '/'));   // Removeing current file.
-    return (isset($_SERVER['HTTPS']) ? "https" : "http") . '://' . $_SERVER['HTTP_HOST'] . $folder . '/oauth2callback.php';
+function getRedirectUri() {
+  //Building Redirect URI
+  $url = $_SERVER['REQUEST_URI'];                    //returns the current URL
+  if (strrpos($url, '?') > 0) {
+    $url = substr($url, 0, strrpos($url, '?'));
+  }  // Removing any parameters.
+  $folder = substr($url, 0, strrpos($url, '/'));   // Removing current file.
+  return (isset($_SERVER['HTTPS']) ? "https" : "http") . '://' . $_SERVER['HTTP_HOST'] . $folder . '/oauth2callback.php';
 }
-
 
 /**
  * Authenticating to Google using Oauth2
  * Documentation:  https://developers.google.com/identity/protocols/OAuth2
  * Returns a Google client with refresh token and access tokens set.
  *  If not authencated then we will redirect to request authencation.
+ *
  * @return A google client object.
  */
-function getOauth2Client()
-{
-    try {
+function getOauth2Client($credentialsPath = __DIR__ . '/credentials.json') {
+  try {
+    $client = buildClient();
 
-        $client = buildClient();
+//    if ($credentials && isset($credentials->refresh_token)) {
+//      $client->refreshToken($credentials->refresh_token);
+//    } else {
+//      //    $_refresh = @file_get_contents(__DIR__ . '/refresh_token.txt');
+//
+//      // Set the refresh token on the client.
+//      if (isset($_SESSION['refresh_token']) && $_SESSION['refresh_token']) {
+//        $client->refreshToken($_SESSION['refresh_token']);
+//      }
+//    }
 
-        // Set the refresh token on the client.
-        if (isset($_SESSION['refresh_token']) && $_SESSION['refresh_token']) {
-            $client->refreshToken($_SESSION['refresh_token']);
-        }
+    // If the user has already authorized this app then get an access token
+    // else redirect to ask the user to authorize access to Google Analytics.
+    if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
+//      $refresh_token = $client->getRefreshToken();
+      // Set the access token on the client.
+      $client->setAccessToken($_SESSION['access_token']);
+//      file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
 
-        // If the user has already authorized this app then get an access token
-        // else redirect to ask the user to authorize access to Google Analytics.
-        if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
-
-            // Set the access token on the client.
-            $client->setAccessToken($_SESSION['access_token']);
-
-            // Refresh the access token if it's expired.
-            if ($client->isAccessTokenExpired()) {
-                $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-                $client->setAccessToken($client->getAccessToken());
-                $_SESSION['access_token'] = $client->getAccessToken();
-            }
-            return $client;
-        } else {
-            // We do not have access request access.
-            header('Location: ' . filter_var($client->getRedirectUri(), FILTER_SANITIZE_URL));
-        }
-    } catch (Exception $e) {
-        print "An error occurred: " . $e->getMessage();
+      // Refresh the access token if it's expired.
+//      if ($client->isAccessTokenExpired()) {
+//        $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+//        $client->setAccessToken($client->getAccessToken());
+//        $_SESSION['access_token'] = $client->getAccessToken();
+//      }
+      return $client;
     }
+    else {
+      $credentials = json_decode(@file_get_contents($credentialsPath), true);
+
+      if (!empty($credentials->access_token)) {
+        //      $client->refreshToken($credentials->refresh_token);
+        $client->setAccessToken($credentials);
+        return $client;
+      }
+      else {
+        // We do not have access request access.
+        header('Location: ' . filter_var($client->getRedirectUri(), FILTER_SANITIZE_URL));
+      }
+    }
+  }
+  catch (Exception $e) {
+    print "An error occurred: " . $e->getMessage();
+  }
 }

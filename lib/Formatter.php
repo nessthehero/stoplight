@@ -171,7 +171,7 @@ class Formatter
 
     public function meetingInProgress()
     {
-        if (!empty($this->event)) {
+        if (!empty($this->event) && !empty($this->event['event']['type'])) {
             $this->setType($this->event['event']['type']);
             if (in_array($this->event['event']['type'], $this->showBusyAsDnDKeys)) {
                 $this->setClassList('dnd');
@@ -184,6 +184,9 @@ class Formatter
             } else {
                 $this->setStatus('In A Meeting');
             }
+        } else {
+          $this->setClassList('busy');
+          $this->setStatus('Busy');
         }
     }
 

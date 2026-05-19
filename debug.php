@@ -43,6 +43,8 @@ $stoplight = new EventList($calendar, new Settings(__DIR__ . '/settings.json'));
 $events = $stoplight->getEvents();
 $currentEvent = $stoplight->getCurrentOrUpcomingEvent();
 
+print_r($_SESSION);
+
 ?>
 <pre>
     <?php print_r($stoplight->cacheDebug()); ?>

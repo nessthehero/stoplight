@@ -37,16 +37,21 @@ require_once __DIR__ . '/Oauth2Authentication.php';
 session_start();
 
 // Handle authorization flow from the server.
-if (! isset($_GET['code'])) {
+if (!isset($_GET['code'])) {
 	$client = buildClient();
 	$auth_url = $client->createAuthUrl();
 	header('Location: ' . filter_var($auth_url, FILTER_SANITIZE_URL));
 } else {
 	$client = buildClient();
-	$client->authenticate($_GET['code']); // Exchange the authencation code for a refresh token and access token.
-	// Add access token and refresh token to seession.
+	$client->fetchAccessTokenWithAuthCode($_GET['code']); // Exchange the authentication code for a refresh token and access token.
+
+  // Save token to credentials file.
+  $credentialsPath = __DIR__ . DIRECTORY_SEPARATOR . 'credentials' . DIRECTORY_SEPARATOR . 'credentials.json';
+  file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
+
+	// Add access token and refresh token to session.
 	$_SESSION['access_token'] = $client->getAccessToken();
-	$_SESSION['refresh_token'] = $client->getRefreshToken();	
+
 	//Redirect back to main script
 	$redirect_uri = str_replace("oauth2callback.php",$_SESSION['mainScript'],$client->getRedirectUri()); 	
 	header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));

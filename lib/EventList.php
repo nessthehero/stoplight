@@ -25,6 +25,8 @@ class EventList
 
     const CACHE_EXPIRES = 300;
 
+    const CACHE_TIME_FORMAT = 'Y-m-d';
+
     public function __construct($calendar, Settings $settings)
     {
 
@@ -40,10 +42,8 @@ class EventList
 
     private function warmCache()
     {
-
         $defaultDriver = 'Files';
         $this->cache = new Psr16Adapter($defaultDriver);
-
     }
 
     private function populateList()
@@ -215,7 +215,7 @@ class EventList
 
     private function cacheKey()
     {
-        return 'today_' . date('Y-m-d', strtotime('now'));
+        return 'today_' . date(self::CACHE_TIME_FORMAT, strtotime('now'));
     }
 
     private function cacheSave($data)
