@@ -20,8 +20,14 @@ $settings = new Settings(__DIR__ . '/settings.json');
 $calendar = null;
 $calendarId = null;
 
+
+
 try {
+  if ($client) {
     $calendar = new Google\Service\Calendar($client);
+  } else {
+    throw new Exception('No Google client');
+  }
 } catch (Exception $e) {
     $lost_connection = true;
 }

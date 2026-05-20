@@ -173,6 +173,7 @@ web_environment: []
 
 # webimage_extra_packages: [php7.4-tidy, php-bcmath]
 # Extra Debian packages that are needed in the webimage can be added here
+webimage_extra_packages: ['syslog-ng']
 
 # dbimage_extra_packages: [telnet,netcat]
 # Extra Debian packages that are needed in the dbimage can be added here
@@ -249,6 +250,10 @@ web_environment: []
 #- name: "http-2"
 #  command: "/var/www/html/node_modules/.bin/http-server /var/www/html/sub -p 3000"
 #  directory: /var/www/html
+web_extra_daemons:
+    - name: "syslog-ng"
+      command: "sudo syslog-ng -F --no-caps"
+      directory: "/usr/sbin"
 
 # override_config: false
 # By default, config.*.yaml files are *merged* into the configuration

@@ -47,12 +47,10 @@ if (!isset($_GET['code'])) {
 
   // Save token to credentials file.
   $credentialsPath = __DIR__ . DIRECTORY_SEPARATOR . 'credentials' . DIRECTORY_SEPARATOR . 'credentials.json';
-  file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
+  writeToCredentials($client, $credentialsPath);
 
-	// Add access token and refresh token to session.
-	$_SESSION['access_token'] = $client->getAccessToken();
+  //Redirect back to main script
+  $redirect_uri = str_replace("oauth2callback.php", $_SESSION['mainScript'] ?? '', $client->getRedirectUri());
 
-	//Redirect back to main script
-	$redirect_uri = str_replace("oauth2callback.php",$_SESSION['mainScript'],$client->getRedirectUri()); 	
-	header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));
+  header('Location: ' . filter_var($redirect_uri, FILTER_SANITIZE_URL));
 }

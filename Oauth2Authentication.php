@@ -41,10 +41,15 @@ require_once __DIR__ . '/vendor/autoload.php';
 function getGoogleClient($credentialsPath = __DIR__ . '/credentials.json') {
   $client = getOauth2Client($credentialsPath);
 
+  if (!$client->getRefreshToken()) {
+//    error_log('[StopLight] No Refresh token found...');
+  }
+
   // Refresh the token if it's expired.
-  if ($client->isAccessTokenExpired() && $client->getRefreshToken()) {
+  if ($client && $client->isAccessTokenExpired()) {
+//    error_log('[StopLight] Refreshing Token...');
     $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-    file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
+    writeToCredentials($client, $credentialsPath);
   }
   return $client;
 }
@@ -105,38 +110,17 @@ function getOauth2Client($credentialsPath = __DIR__ . '/credentials.json') {
   try {
     $client = buildClient();
 
-//    if ($credentials && isset($credentials->refresh_token)) {
-//      $client->refreshToken($credentials->refresh_token);
-//    } else {
-//      //    $_refresh = @file_get_contents(__DIR__ . '/refresh_token.txt');
-//
-//      // Set the refresh token on the client.
-//      if (isset($_SESSION['refresh_token']) && $_SESSION['refresh_token']) {
-//        $client->refreshToken($_SESSION['refresh_token']);
-//      }
-//    }
-
     // If the user has already authorized this app then get an access token
     // else redirect to ask the user to authorize access to Google Analytics.
     if (isset($_SESSION['access_token']) && $_SESSION['access_token']) {
-//      $refresh_token = $client->getRefreshToken();
       // Set the access token on the client.
       $client->setAccessToken($_SESSION['access_token']);
-//      file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
-
-      // Refresh the access token if it's expired.
-//      if ($client->isAccessTokenExpired()) {
-//        $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
-//        $client->setAccessToken($client->getAccessToken());
-//        $_SESSION['access_token'] = $client->getAccessToken();
-//      }
       return $client;
     }
     else {
       $credentials = json_decode(@file_get_contents($credentialsPath), true);
 
       if (!empty($credentials->access_token)) {
-        //      $client->refreshToken($credentials->refresh_token);
         $client->setAccessToken($credentials);
         return $client;
       }
@@ -147,6 +131,24 @@ function getOauth2Client($credentialsPath = __DIR__ . '/credentials.json') {
     }
   }
   catch (Exception $e) {
+    error_log('[StopLight] ' . $e->getMessage());
     print "An error occurred: " . $e->getMessage();
+  }
+}
+
+function writeToCredentials($client, $credentialsPath) {
+  unset($_SESSION['access_token']);
+
+  if (file_exists($credentialsPath)) {
+    unlink($credentialsPath);
+  }
+
+  file_put_contents($credentialsPath, json_encode($client->getAccessToken()));
+
+  // Add access token and refresh token to session.
+  $_SESSION['access_token'] = $client->getAccessToken();
+
+  if (!file_exists($credentialsPath)) {
+    error_log('[StopLight] Unable to create credentials file.');
   }
 }
