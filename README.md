@@ -28,3 +28,5 @@ https://github.com/googleapis/google-api-php-client/blob/main/src/Client.php
 https://github.com/googleapis/google-api-php-client
 
 https://github.com/LindaLawton/Google-APIs-PHP-Samples/blob/master/Samples/Calendar%20API/v3/oauth2callback.php
+
+https://console.cloud.google.com/apis/credentials?project=scotty-spotlight
