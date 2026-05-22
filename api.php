@@ -1,10 +1,11 @@
 <?php
 
-    session_start();
+session_start();
 
-    require_once __DIR__ . '/vendor/autoload.php';
-    require_once __DIR__ . '/Oauth2Authentication.php';
-    require_once __DIR__ . '/functions.php';
-    require_once __DIR__ . '/lib/Settings.php';
-    require_once __DIR__ . '/lib/EventList.php';
-    require_once __DIR__ . '/lib/Formatter.php';
+require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/lib/Settings.php';
+require_once __DIR__ . '/lib/Client.php';
+require_once __DIR__ . '/lib/Event.php';
+require_once __DIR__ . '/lib/EventList.php';
+require_once __DIR__ . '/lib/Formatter.php';

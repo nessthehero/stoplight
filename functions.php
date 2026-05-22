@@ -29,3 +29,15 @@ function print_calendar_options($calendarList, $calendarId) {
         echo '<option value="' . $item . '"' . (($item === $calendarId) ? ' selected' : '') . '>' . $item . '</option>';
     }
 }
+
+function show_debug_info($array) {
+  foreach ($array as $item) {
+    [$heading, $value] = $item;
+    if (!empty($heading) && !empty($value)) {
+      print "<h2>$heading</h2>";
+      print "<pre>";
+      print_r($value);
+      print "</pre>";
+    }
+  }
+}

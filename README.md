@@ -7,6 +7,8 @@
 `ddev composer install`
 
 Log into Google Cloud Console and get Credentials Client Secret JSON file.
+- Edit this file to only include URLs with either the local or remote domain,
+  not both.
 
 Rename to `client_secret.json`
 
@@ -28,3 +30,5 @@ https://github.com/googleapis/google-api-php-client/blob/main/src/Client.php
 https://github.com/googleapis/google-api-php-client
 
 https://github.com/LindaLawton/Google-APIs-PHP-Samples/blob/master/Samples/Calendar%20API/v3/oauth2callback.php
+
+https://console.cloud.google.com/apis/credentials?project=scotty-spotlight

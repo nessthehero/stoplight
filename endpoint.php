@@ -4,6 +4,7 @@ require_once('api.php');
 
 use \StopLight\EventList;
 use \StopLight\Settings;
+use \Stoplight\Client;
 use Phpfastcache\Helper\Psr16Adapter;
 
 $defaultDriver = 'Files';
@@ -12,7 +13,10 @@ $cache = new Psr16Adapter($defaultDriver);
 $lost_connection = false;
 $credentialsPath = __DIR__ . DIRECTORY_SEPARATOR . 'credentials' . DIRECTORY_SEPARATOR . 'credentials.json';
 
-$client = getGoogleClient($credentialsPath);
+$client = new Client($credentialsPath);
+if (!$client->valid()) {
+  die('No client');
+}
 
 $settings = new Settings(__DIR__ . '/settings.json');
 
@@ -20,9 +24,14 @@ $calendar = null;
 $calendarId = null;
 
 try {
-    $calendar = new Google\Service\Calendar($client);
+  if ($client->getClient() !== FALSE) {
+    $calendar = new Google\Service\Calendar($client->getClient());
+  } else {
+    throw new Exception('No Google client');
+  }
 } catch (Exception $e) {
-    $lost_connection = true;
+  $lost_connection = true;
+  error_log('[StopLight] ' . $e->getMessage());
 }
 
 $calendarList = get_calendar_list($calendar);
@@ -49,17 +58,27 @@ if (!empty($calendar)) {
     if ($eventList->getWorkingFrom() === 'Home' && $settings->get('wfh')) {
         $current_event->setClassList('dnd');
         $current_event->setStatus('Working Remotely');
-        $current_event->setSubtitle('');
+        $current_event->setSubtitle('Please contact via Slack or Email');
         $current_event->setType('');
     }
+
+    // Out of Office
 
     // Pre/Post Work Day override
     $workInProgress = $eventList->workInProgress();
     if ($workInProgress !== 0) {
         if ($workInProgress > 0) {
             // After work day
+          $current_event->setClassList('ooo');
+          $current_event->setStatus('End of Work Day');
+          $current_event->setSubtitle('');
+          $current_event->setType('');
         } else {
             // Before work day
+          $current_event->setClassList('ooo');
+          $current_event->setStatus('Work Day Has Not Started');
+          $current_event->setSubtitle('');
+          $current_event->setType('');
         }
     }
 
