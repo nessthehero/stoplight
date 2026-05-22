@@ -5,31 +5,34 @@
 require_once('api.php');
 
 use \StopLight\Settings;
+use \Stoplight\Client;
 use Phpfastcache\Helper\Psr16Adapter;
 
 $defaultDriver = 'Files';
 $cache = new Psr16Adapter($defaultDriver);
 
-$lost_connection = false;
+$lost_connection = FALSE;
 $credentialsPath = __DIR__ . DIRECTORY_SEPARATOR . 'credentials' . DIRECTORY_SEPARATOR . 'credentials.json';
 
-$client = getGoogleClient($credentialsPath);
+$client = new Client($credentialsPath);
+if (!$client->valid()) {
+  die('No client');
+}
 
 $settings = new Settings(__DIR__ . '/settings.json');
 
 $calendar = null;
 $calendarId = null;
 
-
-
 try {
-  if ($client) {
-    $calendar = new Google\Service\Calendar($client);
+  if ($client->getClient() !== FALSE) {
+    $calendar = new Google\Service\Calendar($client->getClient());
   } else {
     throw new Exception('No Google client');
   }
 } catch (Exception $e) {
     $lost_connection = true;
+    error_log('[StopLight] ' . $e->getMessage());
 }
 
 $calendarList = get_calendar_list($calendar);
