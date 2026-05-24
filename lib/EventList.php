@@ -3,239 +3,178 @@
 namespace Stoplight;
 
 use Phpfastcache\Helper\Psr16Adapter;
+use Stoplight\Meeting;
 
-class EventList
-{
+class EventList {
 
-    private $eventList = [];
+  private $eventList = [];
 
-    private $workingFrom = '';
+  private $workingFrom = '';
 
-    private $calendar;
+  private $calendar;
 
-    private $calendarId;
+  private $calendarId;
 
-    private $settings;
+  private $settings;
 
-    private $formatter;
+  private $formatter;
 
-    private $cache;
+  private $cache;
 
-    private $cacheEnabled = TRUE;
+  private $cacheEnabled = TRUE;
 
-    const CACHE_EXPIRES = 300;
+  private $cachedAt = 0;
 
-    const CACHE_TIME_FORMAT = 'Y-m-d';
+  const CACHE_EXPIRES = 300;
 
-    public function __construct($calendar, Settings $settings)
-    {
+  const CACHE_TIME_FORMAT = 'Y-m-d';
 
-        $this->settings = $settings;
-        $this->formatter = new Formatter($settings);
-        $this->calendar = $calendar;
+  public function __construct($calendar, Settings $settings) {
+    $this->settings = $settings;
+    $this->formatter = new Formatter($settings);
+    $this->calendar = $calendar;
 
-        $this->calendarId = $this->settings->get('calendarId');
+    $this->calendarId = $this->settings->get('calendarId');
 
-        self::warmCache();
+    self::warmCache();
+  }
 
+  private function warmCache() {
+    $defaultDriver = 'Files';
+    $this->cache = new Psr16Adapter($defaultDriver);
+  }
+
+  private function loadEvents($begin, $end) {
+    if (!empty($this->calendar)) {
+      $this->eventList = [];
+      if (!$this->isCached()) {
+        $events = $this->calendar->events->listEvents($this->calendarId, [
+          'timeMin'      => date('c', $begin),
+          'timeMax'      => date('c', $end),
+          'singleEvents' => TRUE,
+          'orderBy'      => 'startTime',
+        ]);
+        $this->cacheSave($events);
+      }
+      else {
+        $events = $this->cacheGet();
+      }
+
+      foreach ($events as $event) {
+        $this->eventList[] = new Meeting($event);
+      }
     }
+  }
 
-    private function warmCache()
-    {
-        $defaultDriver = 'Files';
-        $this->cache = new Psr16Adapter($defaultDriver);
-    }
+  public function getEvents($upcomingOnly = FALSE) {
+    self::loadEvents(
+      strtotime('today 12:00:00 AM'),
+      strtotime('today 11:59:59 PM')
+    );
 
-    private function populateList()
-    {
+    $upcoming_events = [];
 
-        if (!empty($this->calendar)) {
-            $time_begin = strtotime('today 12:00:00 AM');
-            $time_end = strtotime('today 11:59:59 PM');
-            $today = date('Y-m-d', strtotime('now'));
-
-            if (!$this->isCached()) {
-                $events = $this->calendar->events->listEvents($this->calendarId, [
-                    'timeMin' => date('c', $time_begin),
-                    'timeMax' => date('c', $time_end),
-                    'singleEvents' => true,
-                    'orderBy' => 'startTime',
-                ]);
-                $this->cacheSave($events);
-            } else {
-                $events = $this->cacheGet();
-            }
-
-            foreach ($events['items'] as $event) {
-                if ($event['eventType'] === 'workingLocation' && $event['start']['date'] === $today) {
-                    $this->workingFrom = $event['summary'];
-                } else {
-                    if (isset($event['start']['dateTime'])) {
-
-                        // Check if I have declined
-                        $declined = FALSE;
-                        $attendees = $event['attendees'];
-                        if (!empty($attendees)) {
-                            foreach ($attendees as $attendee) {
-                                if (!empty($attendee['self']) && $attendee['responseStatus'] === 'declined') {
-                                    $declined = TRUE;
-                                }
-                            }
-                        }
-
-                        if (!$declined) {
-                            $this->eventList[] = [
-                                'start' => $event['start'],
-                                'start_timestamp' => strtotime($event['start']['dateTime']),
-                                'end' => $event['end'],
-                                'end_timestamp' => strtotime($event['end']['dateTime']),
-                                'summary' => $event['summary'],
-                                'type' => $event['eventType'],
-                            ];
-                        }
-                    }
-                }
-            }
+    // Meeting related
+    if (!empty($this->eventList)) {
+      foreach ($this->eventList as $event) {
+        // If we only want upcoming events (current and future)...
+        if ($upcomingOnly && $event->isExpired()) {
+          continue;
         }
 
+        $upcoming_events[] = $event;
+      }
     }
 
-    public function getEvents($upcomingOnly = FALSE)
-    {
+    return $upcoming_events;
+  }
 
-        self::populateList();
+  public function getCurrentEvent() {
+    $upcoming_events = self::getEvents(TRUE);
+    return array_filter($upcoming_events, function($event) {
+      return $event->isCurrent();
+    });
+  }
 
-        $now = strtotime("now");
-        $upcoming_events = [];
+  public function getUpcomingEvent() {
+    $upcoming_events = self::getEvents(TRUE);
+    return array_filter($upcoming_events, function($event) {
+      return $event->willStartIn(
+        $this->settings->get($this->settings::SETTINGS_KEY_ALERT_THRESHOLD, 600)
+      );
+    });
+  }
 
-        // Meeting related
-        if (!empty($this->eventList)) {
-            foreach ($this->eventList as $event) {
-                $start_diff = $now - $event['start_timestamp'];
-                $end_diff = $event['end_timestamp'] - $now;
+  public function getCurrentOrUpcomingEvent() {
+    $current = $this->getCurrentEvent();
+    $upcoming = $this->getUpcomingEvent();
+    return !empty($current) ? $current : $upcoming;
+  }
 
-                $would_be_current = ($start_diff >= 0 && $end_diff >= 0);
-                $would_be_expired = ($start_diff > 0 && $end_diff < 0);
+  public function formatNextEvent() {
+    $this->formatter->setFormat($this->getCurrentOrUpcomingEvent());
+    return $this->formatter;
+  }
 
-                // If we only want upcoming events (current and future)...
-                if ($upcomingOnly && $would_be_expired)
-                    continue;
+  public function getWorkingFrom() {
+    return $this->workingFrom;
+  }
 
-                $upcoming_events[] = [
-                    'event' => $event,
-                    'is_current' => $would_be_current,
-                    'is_expired' => $would_be_expired,
-                    'start_diff' => $start_diff,
-                    'end_diff' => $end_diff,
-                    'event_length' => $event['end_timestamp'] - $event['start_timestamp'],
-                ];
-            }
-        }
+  public function workInProgress() {
+    $work_hours_start = (int) $this->settings->get('work_hours_start');
+    $work_hours_end = (int) $this->settings->get('work_hours_end');
 
-        return $upcoming_events;
+    $current_time = (int) date('Hi');
 
+    if ($current_time > $work_hours_start && $current_time < $work_hours_end) {
+      return 0;
     }
-
-    public function getCurrentEvent()
-    {
-        $upcoming_events = self::getEvents(TRUE);
-        if (count($upcoming_events) > 0) {
-            return array_filter($upcoming_events, function ($k) {
-                return $k['is_current'] === TRUE;
-            });
-        }
-        return [];
+    elseif ($current_time > $work_hours_end) {
+      return 1;
     }
-
-    public function getUpcomingEvent()
-    {
-        $upcoming_events = self::getEvents(TRUE);
-        if (count($upcoming_events) > 0) {
-            return array_filter($upcoming_events, function ($k) {
-                return ($k['start_diff'] <= $this->settings->get($this->settings::SETTINGS_KEY_ALERT_THRESHOLD, 600));
-            });
-        }
-        return [];
+    else {
+      return -1;
     }
+  }
 
-    public function getCurrentOrUpcomingEvent()
-    {
-        $current = $this->getCurrentEvent();
-        $upcoming = $this->getUpcomingEvent();
-        return !empty($current) ? $current : $upcoming;
+  public function timeUntilWorkBegins() {
+    if ($this->workInProgress() < 0) {
     }
+  }
 
-    public function formatNextEvent()
-    {
-        $this->formatter->setFormat($this->getCurrentOrUpcomingEvent());
-        return $this->formatter;
-    }
+  public function isCached() {
+    return $this->cacheEnabled && $this->cache->has($this->cacheKey());
+  }
 
-    public function getWorkingFrom()
-    {
-        return $this->workingFrom;
-    }
+  public function cacheDebug($showObj = FALSE
+  ) {
+    return [
+      'key'    => $this->cacheKey(),
+      'hasIt?' => $this->isCached(),
+      't'      => $showObj ? $this->cacheGet() : 'object suppressed',
+    ];
+  }
 
-    public function workInProgress()
-    {
-        $work_hours_start = (int)$this->settings->get('work_hours_start');
-        $work_hours_end = (int)$this->settings->get('work_hours_end');
+  private function cacheKey() {
+    return 'today_' . date(self::CACHE_TIME_FORMAT, strtotime('now'));
+  }
 
-        $current_time = (int)date('Hi');
+  private function cacheSave($data
+  ) {
+    $this->cache->set($this->cacheKey(), $data, self::CACHE_EXPIRES);
+    $this->cachedAt = time();
+  }
 
-        if ($current_time > $work_hours_start && $current_time < $work_hours_end) {
-            return 0;
-        } elseif ($current_time > $work_hours_end) {
-            return 1;
-        } else {
-            return -1;
-        }
-    }
+  private function cacheGet() {
+    return $this->cache->get($this->cacheKey());
+  }
 
-    public function timeUntilWorkBegins()
-    {
-        if ($this->workInProgress() < 0) {
+  public function enableCache() {
+    $this->cacheEnabled = TRUE;
+  }
 
-        }
-    }
-
-    public function isCached()
-    {
-        return $this->cache->has($this->cacheKey());
-    }
-
-    public function cacheDebug($showObj = false)
-    {
-        return [
-            'key' => $this->cacheKey(),
-            'hasIt?' => $this->isCached(),
-            't' => $showObj ? $this->cacheGet() : 'object suppressed',
-        ];
-    }
-
-    private function cacheKey()
-    {
-        return 'today_' . date(self::CACHE_TIME_FORMAT, strtotime('now'));
-    }
-
-    private function cacheSave($data)
-    {
-        $this->cache->set($this->cacheKey(), $data, self::CACHE_EXPIRES);
-    }
-
-    private function cacheGet()
-    {
-        return $this->cache->get($this->cacheKey());
-    }
-
-    public function enableCache()
-    {
-        $this->cacheEnabled = TRUE;
-    }
-
-    public function disableCache()
-    {
-        $this->cacheEnabled = FALSE;
-    }
+  public function disableCache() {
+    $this->cacheEnabled = FALSE;
+  }
 
 }

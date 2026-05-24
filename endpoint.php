@@ -58,17 +58,27 @@ if (!empty($calendar)) {
     if ($eventList->getWorkingFrom() === 'Home' && $settings->get('wfh')) {
         $current_event->setClassList('dnd');
         $current_event->setStatus('Working Remotely');
-        $current_event->setSubtitle('');
+        $current_event->setSubtitle('Please contact via Slack or Email');
         $current_event->setType('');
     }
+
+    // Out of Office
 
     // Pre/Post Work Day override
     $workInProgress = $eventList->workInProgress();
     if ($workInProgress !== 0) {
         if ($workInProgress > 0) {
             // After work day
+          $current_event->setClassList('ooo');
+          $current_event->setStatus('End of Work Day');
+          $current_event->setSubtitle('');
+          $current_event->setType('');
         } else {
             // Before work day
+          $current_event->setClassList('ooo');
+          $current_event->setStatus('Work Day Has Not Started');
+          $current_event->setSubtitle('');
+          $current_event->setType('');
         }
     }
 

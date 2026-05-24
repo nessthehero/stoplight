@@ -25,11 +25,7 @@ $calendar = null;
 $calendarId = null;
 
 try {
-  if ($client->getClient() !== FALSE) {
-    $calendar = new Google\Service\Calendar($client->getClient());
-  } else {
-    throw new Exception('No Google client');
-  }
+  $calendar = new Google\Service\Calendar($client->getClient());
 } catch (Exception $e) {
     $lost_connection = true;
     error_log('[StopLight] ' . $e->getMessage());

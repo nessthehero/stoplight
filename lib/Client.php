@@ -9,6 +9,8 @@ class Client {
 
   const string CLIENT_CALLBACK_FILE = 'oauth2callback.php';
 
+  const string CLIENT_SECRET_FILE = __DIR__ . '/../client_secret.json';
+
   private array $credentials;
 
   private string $credentialFile = '';
@@ -30,7 +32,7 @@ class Client {
         Calendar::CALENDAR_READONLY,
         Calendar::CALENDAR_EVENTS_READONLY,
       ],
-      'credentials'            => __DIR__ . '/../client_secret.json',
+      'credentials'            => self::CLIENT_SECRET_FILE,
       'redirect_uri'           => self::getRedirectUri(),
     ];
 
@@ -64,10 +66,12 @@ class Client {
         $this->setAccessToken($_SESSION['access_token']);
       }
       else {
-        $this->credentials = json_decode(
-          @file_get_contents($this->credentialFile),
-          TRUE
-        );
+        if (file_exists($this->credentialFile)) {
+          $this->credentials = json_decode(
+            @file_get_contents($this->credentialFile),
+            TRUE
+          );
+        }
 
         if (!empty($this->credentials['access_token'])) {
           $this->setAccessToken($this->credentials);
@@ -103,6 +107,15 @@ class Client {
 
   public function isAccessTokenExpired() : bool {
     return $this->client->isAccessTokenExpired() ?? TRUE;
+  }
+
+  public function createAuthUrl() : string {
+    return $this->client->createAuthUrl();
+  }
+
+  public function fetchAccessTokenWithAuthCode($code) : void {
+    $this->client->fetchAccessTokenWithAuthCode($code);
+    $this->writeCredentials();
   }
 
   private function writeCredentials() {

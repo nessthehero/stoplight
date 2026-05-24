@@ -7,6 +7,8 @@
 `ddev composer install`
 
 Log into Google Cloud Console and get Credentials Client Secret JSON file.
+- Edit this file to only include URLs with either the local or remote domain,
+  not both.
 
 Rename to `client_secret.json`
 
